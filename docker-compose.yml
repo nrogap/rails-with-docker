@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:10.0
+    env_file: .env
+
+  app:
+    build: .
+    env_file: .env
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  adminer:
+    image: adminer
+    depends_on:
+      - db
+    ports:
+      - "18080:8080"
