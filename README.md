@@ -1,24 +1,102 @@
-# README
+# Rails with Docker
+**rails** and **postgres** on **docker**
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+# Preparing
+In case you don't clone this repository, and prefer to start everything by yourself. Please follow these step below.
+## Create Rails Project
+`rails new project-name --database=postgresql`
 
-Things you may want to cover:
+## Create .env file
+```
+POSTGRES_USER=nrogap
+POSTGRES_PASSWORD=abcd1234
+POSTGRES_HOST=db
+```
 
-* Ruby version
+## Edit database.yml file
+```yml
+# config/database.yml
 
-* System dependencies
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  host: db
+  username: <%= ENV["POSTGRES_USER"] %>
+  password: <%= ENV["POSTGRES_PASSWORD"] %>
+  # For details on connection pooling, see rails configuration guide
+  # http://guides.rubyonrails.org/configuring.html#database-pooling
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
-* Configuration
+development:
+  <<: *default
+  database: blog_development
 
-* Database creation
+test:
+  <<: *default
+  database: blog_test
 
-* Database initialization
+production:
+  <<: *default
+  host: <%= ENV["POSTGRES_HOST"] %>
+  database: blog_production
+```
 
-* How to run the test suite
+## Create Dockerfile
+```Dockerfile
+FROM ruby:2.5.1
 
-* Services (job queues, cache servers, search engines, etc.)
+RUN apt-get update -yqq \
+  && apt-get install -yqq --no-install-recommends \
+    nodejs \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists
 
-* Deployment instructions
+WORKDIR /usr/src/app
+COPY Gemfile* ./
+RUN bundle install
+COPY . .
 
-* ...
+EXPOSE 3000
+CMD rails server -b 0.0.0.0
+```
+
+## Create docker-compose.yml
+```yml
+version: "3"
+
+services:
+  db:
+    image: postgres:10
+    env_file: .env
+
+  app:
+    build: .
+    env_file: .env
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+```
+
+# Setup Docker Container
+1. Create and start `database` container in background mode `-d`
+```
+docker-compose up -d db 
+```
+2. Build `app` container
+```
+docker-compose build app
+```
+3. Run `db:create` and `db:migrate` on container `app`, and remove container after run `--rm`
+```
+docker-compose run --rm app rake db:create db:migrate
+```
+4. Create and start `app` container
+```
+docker-compose up app
+```
+
+# Knowledge Source
+- [Deploying a Rails Application with Docker](https://www.youtube.com/watch?v=jlVrYgVEl6M)
