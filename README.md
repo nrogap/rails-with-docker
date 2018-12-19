@@ -3,6 +3,7 @@
 
 # Preparing
 In case you don't clone this repository, and prefer to start everything by yourself. Please follow these step below.
+
 ## Create Rails Project
 `rails new project-name --database=postgresql`
 
@@ -83,7 +84,7 @@ services:
 # Setup Docker Container
 1. Create and start `database` container in background mode `-d`
 ```
-docker-compose up -d db 
+docker-compose up -d db
 ```
 2. Build `app` container
 ```
